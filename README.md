@@ -21,15 +21,27 @@ Fully automated with PowerShell and Bash scripts.
 - Prometheus — metrics collection every 15 seconds
 - Node Exporter — Linux system metrics (CPU, RAM, Disk, Network)
 - Grafana — live dashboard accessible from any domain machine
-- Wazuh Agent — security monitoring (connected to manager)
 - Windows Exporter — installed on DC01 for Windows metrics
+
+### Graylog — Centralized Log Management
+- MongoDB + OpenSearch + Graylog deployed via Docker Compose
+- NXLog agents on DC01 and Client-01 forwarding Windows Event Logs (GELF/UDP)
+- Automated deployment via GPO Software Installation
+- Logs from both machines searchable in real time at http://192.168.1.101:9000
+
+> Note: Wazuh SIEM was attempted first but abandoned due to persistent API/SSL
+> crashes on Ubuntu 24.04 (both native and Docker install). Graylog was a clean
+> deployment on the first attempt and covers the same centralized-logging need.
 
 ## Scripts
 
 | Script | Language | What it does |
 |--------|----------|--------------|
 | AD-Setup.ps1 | PowerShell | Full AD setup: OUs, users, groups, DHCP, 6 GPOs |
-| install-monitoring.sh | Bash | Prometheus + Node Exporter + Grafana + Wazuh install |
+| install-monitoring.sh | Bash | Prometheus + Node Exporter + Grafana install |
+| graylog/docker-compose.yml | Docker Compose | MongoDB + OpenSearch + Graylog stack |
+| graylog/nxlog.conf | NXLog config | Forwards Windows Event Logs to Graylog (GELF) |
+| graylog/Deploy-NXLog-GPO.ps1 | PowerShell | Creates software share + GPO to deploy NXLog domain-wide |
 
 ## Infrastructure
 
@@ -37,15 +49,15 @@ Fully automated with PowerShell and Bash scripts.
 |----|----|----|------|
 | DC01 | Windows Server 2022 | 192.168.1.10 | Domain Controller, DNS, DHCP |
 | Client-01 | Windows 11 | DHCP | Domain workstation |
-| Monitor-01 | Ubuntu 24.04 | 192.168.1.101 | Prometheus, Grafana, Wazuh |
+| Monitor-01 | Ubuntu 24.04 | 192.168.1.101 | Prometheus, Grafana, Graylog |
 
 ## Tech Stack
 Windows Server 2022 · Windows 11 · Ubuntu 24.04 · Active Directory · GPO ·
-PowerShell · Bash · Prometheus · Grafana · Node Exporter · Wazuh · VMware
+PowerShell · Bash · Docker · Prometheus · Grafana · Node Exporter ·
+Graylog · NXLog · MongoDB · OpenSearch · VMware
 
 ## Coming next
-- Wazuh SIEM — security alerts, failed logins, intrusion detection
-- Graylog — centralized log management
+- Graylog alerts (failed logon attempts, suspicious activity)
 - VPN + AD integration (LDAP authentication)
 
 ## Author
