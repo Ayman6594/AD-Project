@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: graylog-mongodb
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - graylog-net
+
+  opensearch:
+    image: opensearchproject/opensearch:2.12.0
+    container_name: graylog-opensearch
+    restart: unless-stopped
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "discovery.type=single-node"
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+      - "DISABLE_SECURITY_PLUGIN=true"
+      - "action.auto_create_index=false"
+      - "plugins.security.ssl.http.enabled=false"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks:
+      - graylog-net
+
+  graylog:
+    image: graylog/graylog:6.0
+    container_name: graylog-server
+    restart: unless-stopped
+    environment:
+      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper123456789
+      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://192.168.1.101:9000/
+      - GRAYLOG_ELASTICSEARCH_HOSTS=http://opensearch:9200
+      - GRAYLOG_MONGODB_URI=mongodb://mongodb:27017/graylog
+    entrypoint: /usr/bin/tini -- wait-for-it opensearch:9200 --  /docker-entrypoint.sh
+    ports:
+      - "9000:9000"
+      - "12201:12201/udp"
+      - "1514:1514"
+    depends_on:
+      - mongodb
+      - opensearch
+    volumes:
+      - graylog_data:/usr/share/graylog/data
+    networks:
+      - graylog-net
+
+volumes:
+  mongo_data:
+  opensearch_data:
+  graylog_data:
+
+networks:
+  graylog-net:
+    driver: bridge
